@@ -1,75 +1,90 @@
 # Olist E-Commerce Analytics
 
-**End-to-end analytics on 100K+ Brazilian e-commerce orders — SQL analysis, RFM segmentation, cohort retention, and interactive Streamlit dashboard**
+**SQL-first analytics on 100K+ Brazilian e-commerce orders — 9-table schema, 48 queries, RFM segmentation, cohort retention, and a 5-page interactive dashboard.**
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![SQL](https://img.shields.io/badge/SQL-4479A1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 
-## Overview
-This project provides an end-to-end data analytics pipeline and dashboard for the Olist Brazilian E-Commerce dataset. It covers data quality checks, revenue trend analysis, customer segmentation (RFM), cohort retention, and identifying key drivers for customer satisfaction and delivery performance.
+## What this is
 
-**Dataset:** Olist Brazilian E-Commerce (Kaggle) — 100K orders, 2016–2018  
-**Link to Kaggle dataset:** [https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
+An end-to-end analytics pipeline on the [Olist Brazilian E-Commerce dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) (100K orders, 2016–2018). It starts with a data-quality audit, then answers business questions on revenue, customers, sellers, reviews, and delivery — all in SQL, with a Streamlit dashboard on top.
 
-## Key Findings
-1. **Late Delivery Drives 1-Star Reviews** — [TODO: Insert exact numbers from 05_reviews.sql, e.g., 'Orders delivered 7+ days late had avg review score of X.X vs Y.Y for on-time']
-   - **Recommendation:** Implement seller SLA penalties for late shipments; show honest ETAs at checkout
-2. **Revenue Concentrated in Top Sellers** — [TODO: Insert numbers from 06_sellers.sql, e.g., 'Top 10% of sellers drive X% of revenue']
-   - **Recommendation:** Build seller quality scorecard; diversify seller base
-3. **RFM Segments Reveal Retention Opportunity** — [TODO: Insert numbers from 03_rfm.sql, e.g., 'X% of customers are At Risk or Lost, representing $Y in past revenue']
-   - **Recommendation:** Targeted retention campaigns for At-Risk segment; loyalty program for Champions
+**What's inside**
 
-## Project Structure
+- **9-table SQLite schema** with foreign keys and indexes, built from the raw Kaggle files
+- **48 queries across 7 analysis files**, each tied to a business question and commented
+- **SQL window functions throughout** — LAG for month-over-month growth, NTILE for RFM scoring, cumulative SUM for revenue trends
+- **5-page Streamlit + Plotly dashboard** — Overview, Customers, Sellers, Logistics, Reviews
+- **A Python loader** that turns the Kaggle CSVs into the database, and a runner that executes any SQL file with formatted output
+
+## Analysis areas
+
+| File | Business questions | Techniques |
+|---|---|---|
+| `01_data_quality.sql` | Orphan records, duplicates, invalid prices, timeline inconsistencies | Referential-integrity checks, range validation |
+| `02_revenue.sql` | Monthly/quarterly trends, top categories and states, average order value | LAG, cumulative SUM, grouping |
+| `03_rfm.sql` | Who are the Champions, At-Risk, and Lost customers? | NTILE scoring on Recency, Frequency, Monetary |
+| `04_cohort_retention.sql` | Do customers come back after their first purchase month? | Cohort pivoting by first-purchase month |
+| `05_reviews.sql` | What drives 1-star vs 5-star reviews? | Delivery-delay vs score analysis |
+| `06_sellers.sql` | Which sellers drive revenue, and how satisfied are their customers? | Seller scorecard: revenue, volume, satisfaction |
+| `07_delivery.sql` | Where does delivery cost and time hurt most? | Freight vs price, actual vs estimated delivery, state bottlenecks |
+
+## How to run
+
+The dataset itself is **not included** (Kaggle download, free account required). Everything else runs locally:
+
+```bash
+git clone https://github.com/raghuvendra34/Olist-ecommerce-analytics.git
+cd Olist-ecommerce-analytics
+pip install -r requirements.txt
+
+# 1. Download the Kaggle dataset into data/
+#    https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+
+# 2. Load CSVs into SQLite (creates olist.db)
+python scripts/load_data.py
+
+# 3. Run any analysis file
+python scripts/run_analysis.py sql/05_reviews.sql
+
+# 4. Launch the dashboard
+streamlit run dashboard/app.py
 ```
-olist-ecommerce-analytics/
-├── data/                  # Kaggle CSVs (not tracked)
+
+## Project structure
+
+```
+Olist-ecommerce-analytics/
 ├── sql/
-│   ├── schema.sql         # Database schema (9 tables)
-│   ├── 01_data_quality.sql
-│   ├── 02_revenue.sql
-│   ├── 03_rfm.sql
-│   ├── 04_cohort_retention.sql
-│   ├── 05_reviews.sql
-│   ├── 06_sellers.sql
-│   └── 07_delivery.sql
+│   ├── schema.sql               # 9-table schema with foreign keys and indexes
+│   ├── 01_data_quality.sql      # 10 queries
+│   ├── 02_revenue.sql           # 8 queries
+│   ├── 03_rfm.sql               # 4 queries
+│   ├── 04_cohort_retention.sql  # 5 queries
+│   ├── 05_reviews.sql           # 7 queries
+│   ├── 06_sellers.sql           # 6 queries
+│   └── 07_delivery.sql          # 8 queries
 ├── scripts/
-│   ├── load_data.py       # CSV → SQLite loader
-│   └── run_analysis.py    # SQL runner with formatted output
+│   ├── load_data.py             # CSV → SQLite loader
+│   └── run_analysis.py          # SQL runner with formatted output
 ├── dashboard/
-│   └── app.py             # 5-page Streamlit dashboard
+│   └── app.py                   # 5-page Streamlit dashboard
 ├── notebooks/
-│   └── eda.ipynb          # Exploratory data analysis
-├── olist.db               # SQLite database (generated)
+│   └── eda.ipynb                # Exploratory analysis (runs against olist.db)
+├── data/                        # Kaggle CSVs — not tracked, download separately
+├── olist.db                     # Generated by the loader — not tracked
 └── README.md
 ```
 
-## Setup & Usage
-1. Clone the repo
-2. Download data from Kaggle into `data/`
-3. Install dependencies: `pip install pandas streamlit plotly tabulate`
-4. Load data: `python scripts/load_data.py`
-5. Run analysis: `python scripts/run_analysis.py sql/05_reviews.sql`
-6. Launch dashboard: `streamlit run dashboard/app.py`
+## Current status
 
-## Analysis Deep Dives
-Brief description of each SQL file and what business question it answers:
-- **01 Data quality audit:** Identifies missing values, duplicates, and anomalies in the raw dataset.
-- **02 Revenue trends and drivers:** Analyzes monthly revenue, average order value, and top product categories.
-- **03 Customer segmentation (RFM):** Classifies customers based on Recency, Frequency, and Monetary value.
-- **04 Cohort retention analysis:** Tracks user retention rates over time based on their first purchase month.
-- **05 Review score drivers:** Investigates the impact of delivery times, product quality, and other factors on customer reviews.
-- **06 Seller performance scorecard:** Evaluates top sellers by revenue, volume, and customer satisfaction.
-- **07 Delivery and logistics economics:** Analyzes freight costs, delivery times vs. ETAs, and geographic bottlenecks.
+The pipeline is complete and ready to run: schema, queries, loader, runner, and dashboard are all in place. Findings and dashboard screenshots will be added here after the first full run on the real dataset.
 
-## Tech Stack
-- **SQL (SQLite):** Complex analytics queries with window functions
-- **Python:** Data loading and automation
-- **Streamlit + Plotly:** Interactive dashboard
-- **Pandas:** Data manipulation
+## Tech stack
 
-## Resume Bullet Points
-- Analyzed 100K+ e-commerce orders using SQL window functions (LAG, NTILE, cumulative SUM); identified that delivery delays >7 days drove 1-star reviews, leading to recommended seller SLA framework
-- Built RFM customer segmentation identifying X Champions and Y At-Risk customers; proposed targeted retention campaigns
-- Developed 5-page Streamlit dashboard with Plotly visualizations for executive stakeholder review
+- **SQL (SQLite)** — analytics queries with window functions
+- **Python** — data loading and automation (pandas)
+- **Streamlit + Plotly** — interactive dashboard
+- **Jupyter** — exploratory analysis
